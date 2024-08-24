@@ -34,15 +34,65 @@ Map_unit* current_map;
 int width;
 int height;
 
+int cursor_pos = 560;
+int skill_index = 0;
+
+std::vector<std::string> skills = {
+    "lazer",
+    "rail gun",
+    "rockets"
+};
+
+int animating = 0;
+void animation(){
+    std::string name = skills[skill_index];
+    if(name == "lazer"){
+        DrawRectanglePro({310,460,600,(float)animating/2}, {0,0}, -27.0, BLACK);
+    }
+    else if(name == "rail gun"){
+        DrawRectanglePro({(float)(310+(50-animating)*10),(float)460-(50-animating)*6,50,10}, {0,0}, -27.0, BLACK);
+    }
+    else if(name == "rockets"){
+        DrawRectanglePro({(float)(310+(50-animating)*10),(float)460-(50-animating)*6,50,10}, {0,0}, -27.0, BLACK);
+        DrawRectanglePro({(float)(310+(50-animating)*10),(float)450-(50-animating)*6,10,30}, {0,0}, -27.0, BLACK);
+    }
+    animating--;
+    
+}
+
 void drawFight(){
     Image img = LoadImage("enemy.png"); 
     Texture2D texture = LoadTextureFromImage(img);
     img = LoadImage("back.png"); 
     Texture2D texture2 = LoadTextureFromImage(img);
 
-    DrawTexture(texture, 1000,100, WHITE);
-    DrawTexture(texture2, 100,500, WHITE);
+    DrawTexture(texture, 850,75, WHITE);
+    DrawTexture(texture2, 120,370, WHITE);
 
+    if(IsKeyPressed(KEY_S) || IsKeyPressed(KEY_DOWN)){
+        if(skill_index >= 2){
+            skill_index = 0;
+        }
+        else{
+            skill_index++;
+        }
+    }
+    if(IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP)){
+        if(skill_index < 1){
+            skill_index = 2;
+        }
+        else{
+            skill_index--;
+        }
+    }
+    if(IsKeyReleased(KEY_ENTER)){
+        animating = 50;
+    }
+    DrawRectangle(875, cursor_pos + skill_index * 50, 20,5, MAROON);
+    DrawText(skills[0].c_str(), 950, 550, 30, MAROON);
+    DrawText(skills[1].c_str(), 950, 600, 30, MAROON);
+    DrawText(skills[2].c_str(), 950, 650, 30, MAROON);
+    DrawText("esc to quit", 300, 300, 30, MAROON);
 }
 
 std::vector<Rectangle> generateMap(){
@@ -157,8 +207,8 @@ float update_player(Rectangle& player, float rotation){
 void roaming(Player_info& player_info){
     player_info.rotation = update_player(player_info.player, player_info.rotation);
 
-    DrawText(std::to_string(player_info.player.x).c_str(), 50, 50, 50, MAROON);
-    DrawText(std::to_string(player_info.player.y).c_str(), 50, 100, 50, MAROON);
+    DrawText("esc to quit", 50, 50, 50, MAROON);
+    DrawText("wasd to control", 50, 100, 50, MAROON);
     DrawTexturePro(player_info.texture,(Rectangle){0,0,(float) player_info.texture.width, (float) player_info.texture.height} ,
             (Rectangle){player_info.player.x,player_info.player.y, (float)player_info.texture.width, (float)player_info.texture.height}, 
             player_info.origin, player_info.rotation, WHITE);
@@ -210,6 +260,9 @@ void run_loop(){
             switchMap(player.player);    
         }else if(status == FIGHT){
             drawFight();
+            if(animating > 1){
+                animation();
+            }
         }
         EndDrawing();
     }

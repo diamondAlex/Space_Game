@@ -1,0 +1,6 @@
+PRIO:
+    switching weapons switches animation midway
+
+
+MID:
+    either make the map nodes link back to each other or switch to a 2d array (cause now the only way to reach an existing map is to walk all the way back where you came from)

@@ -1,4 +1,6 @@
 //the image of the ship should not have a whole white square
+//think of a way to display map full screen
+//think of a way to loop back to map nodes, cause now nodes will never meet unless you move directly back
 #include <raylib.h>
 #include <string>
 #include <vector>
@@ -11,18 +13,23 @@ const int speed = 5;
 enum Status{FREE,FIGHT,NEWMAP};
 Status status = FREE;
 
+//make it a factory of some sort that returns random enemies
 struct Enemy_info{
     int hp;
     int damage;
     int index;
+    std::string image;    
 };
 
 struct Enemy_info enemy = {
     100,
     10,
-    0
+    0,
+    "img/enemy.png"
 };
 
+//add image info
+//add exp/level
 struct Player_info{
     int hp;
     int damage;
@@ -98,7 +105,7 @@ void animation(){
 
 
 void drawFight(Player_info& player){
-    Image img = LoadImage("img/enemy.png"); 
+    Image img = LoadImage(enemy.image.c_str()); 
     Texture2D texture = LoadTextureFromImage(img);
     img = LoadImage("img/back.png"); 
     Texture2D texture2 = LoadTextureFromImage(img);

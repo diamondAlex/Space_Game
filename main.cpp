@@ -1,6 +1,7 @@
 //the image of the ship should not have a whole white square
 //think of a way to display map full screen
 //think of a way to loop back to map nodes, cause now nodes will never meet unless you move directly back
+//run away from fight?
 #include <raylib.h>
 #include <string>
 #include <vector>
@@ -32,6 +33,7 @@ struct Enemy_info enemy = {
 //add exp/level
 struct Player_info{
     int hp;
+    int max_hp;
     int damage;
     Rectangle player;
     Texture2D texture;
@@ -40,7 +42,8 @@ struct Player_info{
 };
 
 struct Map_unit{
-    std::vector<Rectangle> recs;
+    std::vector<Rectangle> recs_enemy;
+    std::vector<Rectangle> recs_heal;
     Map_unit* top;
     Map_unit* bot;
     Map_unit* left;
@@ -97,7 +100,7 @@ void animation(){
     if(animating == 0 && enemy.hp <= 0){
         status = FREE;
         enemy.hp = 100;
-        current_map->recs.erase(current_map->recs.begin()+enemy.index);
+        current_map->recs_enemy.erase(current_map->recs_enemy.begin()+enemy.index);
     }else if(animating == 0){
         animating = -90;
     }
@@ -165,17 +168,20 @@ std::vector<Rectangle> generateMap(){
 }
 
 void drawMap(){
-    for(const auto& rec: current_map->recs){
+    for(const auto& rec: current_map->recs_enemy){
         DrawRectangleRec(rec, MAROON);
+    }
+    for(const auto& rec: current_map->recs_heal){
+        DrawRectangleRec(rec, GREEN);
     }
 }
 
-//theres no way thats clean
 void switchMap(Rectangle& player){
     if(player.y > height){
         if(!current_map->bot){
             Map_unit* new_map = new Map_unit();
-            new_map->recs = generateMap();
+            new_map->recs_enemy = generateMap();
+            new_map->recs_heal = generateMap();
             new_map->top = current_map;
             new_map->left = nullptr;
             new_map->right = nullptr;
@@ -189,7 +195,8 @@ void switchMap(Rectangle& player){
     }else if(player.y < 0){
         if(!current_map->top){
             Map_unit* new_map = new Map_unit();
-            new_map->recs = generateMap();
+            new_map->recs_enemy = generateMap();
+            new_map->recs_heal = generateMap();
             new_map->top = nullptr;
             new_map->left = nullptr;
             new_map->right = nullptr;
@@ -203,7 +210,8 @@ void switchMap(Rectangle& player){
     }else if(player.x > width){
         if(!current_map->right){
             Map_unit* new_map = new Map_unit();
-            new_map->recs = generateMap();
+            new_map->recs_enemy = generateMap();
+            new_map->recs_heal = generateMap();
             new_map->top = nullptr;
             new_map->left = current_map;
             new_map->right = nullptr;
@@ -217,7 +225,8 @@ void switchMap(Rectangle& player){
     }else if(player.x < 0){
         if(!current_map->left){
             Map_unit* new_map = new Map_unit();
-            new_map->recs = generateMap();
+            new_map->recs_enemy = generateMap();
+            new_map->recs_heal = generateMap();
             new_map->top = nullptr;
             new_map->left = nullptr;
             new_map->right = current_map;
@@ -266,7 +275,16 @@ int roaming(Player_info& player_info){
             (Rectangle){player_info.player.x,player_info.player.y, (float)player_info.texture.width, (float)player_info.texture.height}, 
             player_info.origin, player_info.rotation, WHITE);
     int i = 0;
-    for(const auto& rec: current_map->recs){
+    for(const auto& rec: current_map->recs_heal){
+        if(CheckCollisionRecs(player_info.player, rec)){
+            player_info.hp >= player_info.max_hp ? true: player_info.hp += 10;
+            current_map->recs_heal.erase(current_map->recs_heal.begin()+i);
+            return -1;
+        }
+        i++;
+    }
+    i = 0;
+    for(const auto& rec: current_map->recs_enemy){
         if(CheckCollisionRecs(player_info.player, rec)){
             status = FIGHT;
             return i;
@@ -290,6 +308,7 @@ void run_loop(){
     Texture2D texture = LoadTextureFromImage(img);
     struct Player_info player = {
         100,
+        100,
         10,
         Rectangle { (float) 300, (float) 300, 25 ,25},
         texture,
@@ -298,10 +317,11 @@ void run_loop(){
     };
 
 
-    std::vector<Rectangle> recs = generateMap();
+    std::vector<Rectangle> recs_enemy = generateMap();
+    std::vector<Rectangle> recs_heal = generateMap();
 
     Map_unit new_map = {
-        recs,nullptr,nullptr,nullptr,nullptr
+        recs_enemy,recs_heal,nullptr,nullptr,nullptr,nullptr
     };
 
     current_map = &new_map;
@@ -312,7 +332,9 @@ void run_loop(){
         ClearBackground(WHITE);
 
         if(status == FREE){
-            enemy.index = roaming(player);
+            int index= roaming(player);
+            if(index != -1)
+                enemy.index = index;
             drawMap();
         }else if(status == NEWMAP){
             switchMap(player.player);    
